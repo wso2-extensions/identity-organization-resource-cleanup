@@ -234,10 +234,11 @@ The script follows these steps:
 
 ---
 
-### Sample Configuration with H2
+### Sample Configuration with MySQL
 ```bash
 SHARED_DB_TYPE="mysql"
 IDENTITY_DB_TYPE="mysql"
+
 SHARED_DB_HOSTS=("localhost")
 SHARED_DB_PORTS=("3306")
 SHARED_DB_NAMES=("WSO2_SHARED_DB")
@@ -255,7 +256,6 @@ IDENTITY_DB_LOG_DIRS=("/var/log/identity")
 BATCH_SIZE=20
 BATCH_WAIT_TIME=200
 EXPORT_FILE="/tmp/exported_data.csv"
-H2_JAR_PATH="/usr/local/h2/h2-2.2.220.jar"
 ```
 
 Execute the script:
