@@ -92,7 +92,7 @@ fi
 # Filter TABLE_LIST to include only tables that exist in AVAILABLE_TABLES
 DELETE_ORDER=()
 for table in "${TABLE_LIST[@]}"; do
-  if echo "$AVAILABLE_TABLES" | grep -qw "$table"; then
+  if echo "$AVAILABLE_TABLES" | grep -qiw "$table"; then
     DELETE_ORDER+=("$table")
   fi
 done
@@ -113,6 +113,8 @@ while IFS=',' read -r TENANT_ID ORG_UUID; do
     for table in "${DELETE_ORDER[@]}"; do
       if [[ "$table" == "IDN_ORG_USER_INVITATION" ]]; then
         DELETE_PROCEDURE+="DELETE FROM $table WHERE INVITED_ORG_ID = '$ORG_UUID';"
+      elif [[ "$table" == "IDN_ASYNC_OPERATION_STATUS" ]]; then
+        DELETE_PROCEDURE+="DELETE FROM $table WHERE INITIATED_ORG_ID = '$ORG_UUID';"
       elif [[ "$table" == "IDN_OAUTH_PAR" ]]; then
         DELETE_PROCEDURE+="DELETE FROM $table WHERE CLIENT_ID IN (SELECT CONSUMER_KEY FROM IDN_OAUTH_CONSUMER_APPS WHERE TENANT_ID = $TENANT_ID);"
       else
@@ -142,4 +144,3 @@ echo "Data deletion process completed. Summary available at $SUMMARY_FILE."
 
 # Unset PGPASSWORD to avoid leaving it in the environment
 unset PGPASSWORD
-

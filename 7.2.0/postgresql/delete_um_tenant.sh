@@ -85,4 +85,3 @@ done
 unset PGPASSWORD
 
 echo "UM_TENANT deletion process completed. Summary available at $SUMMARY_FILE."
-

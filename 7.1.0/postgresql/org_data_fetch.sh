@@ -22,7 +22,7 @@ FETCH_QUERY="
 SELECT UM_TENANT.UM_ID AS TENANT_ID, UM_TENANT.UM_ORG_UUID AS ORG_UUID
 FROM UM_TENANT
 LEFT JOIN UM_ORG ON UM_TENANT.UM_ORG_UUID = UM_ORG.UM_ID
-WHERE UM_TENANT.UM_ACTIVE = 0 AND UM_ORG.UM_ID IS NULL
+WHERE UM_TENANT.UM_ACTIVE = FALSE AND UM_ORG.UM_ID IS NULL
 ORDER BY UM_TENANT.UM_CREATED_DATE DESC
 LIMIT $BATCH_SIZE;
 "
@@ -64,8 +64,8 @@ done < "$RAW_OUTPUT"
 # Clean up temporary raw output file
 rm -f "$RAW_OUTPUT"
 
-# Check if the export file contains more than just the header
-if [[ $(wc -l < "$EXPORT_FILE") -le 1 ]]; then
+# Check whether any data rows were exported.
+if [[ $(wc -l < "$EXPORT_FILE") -eq 0 ]]; then
   echo "Query executed successfully but no data returned. Exiting with success."
   exit 0
 else
@@ -74,4 +74,3 @@ fi
 
 # Unset PGPASSWORD to avoid leaving it in the environment.
 unset PGPASSWORD
-

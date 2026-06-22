@@ -65,6 +65,11 @@ echo "Starting UM_TENANT deletion process..."
 for TENANT_ID in $COMMON_TENANTS; do
   echo "Processing TENANT_ID=$TENANT_ID"
 
+  if ! [[ "$TENANT_ID" =~ ^[0-9]+$ ]]; then
+    echo "Skipping invalid TENANT_ID: $TENANT_ID" | tee -a "$SUMMARY_FILE"
+    continue
+  fi
+
   # Generate the delete procedure
   DELETE_PROCEDURE="DELETE FROM UM_TENANT WHERE UM_ID = ${TENANT_ID};"
 
@@ -86,4 +91,4 @@ done
 unset PGPASSWORD
 
 echo "UM_TENANT deletion process completed. Summary available at $SUMMARY_FILE."
-
+

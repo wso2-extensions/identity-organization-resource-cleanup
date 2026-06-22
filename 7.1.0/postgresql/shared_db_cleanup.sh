@@ -86,15 +86,15 @@ echo "Starting data deletion process..."
 
 # Step 4: Iterate through each tenant and execute delete queries
 while IFS=',' read -r TENANT_ID ORG_UUID; do
-  # Trim spaces
+  # Trim and validate values before interpolating them into SQL.
   TENANT_ID=$(echo "$TENANT_ID" | xargs)
   ORG_UUID=$(echo "$ORG_UUID" | xargs)
 
-  if [[ -n "$TENANT_ID" && -n "$ORG_UUID" ]]; then
+  if [[ "$TENANT_ID" =~ ^[0-9]+$ && "$ORG_UUID" =~ ^[a-zA-Z0-9-]+$ ]]; then
     echo "Processing TENANT_ID=$TENANT_ID, ORG_UUID=$ORG_UUID"
 
     # Construct the deletion procedure
-    DELETE_PROCEDURE=""
+    DELETE_PROCEDURE="BEGIN;"
     for table in "${DELETE_ORDER[@]}"; do
       if [[ "$table" == "UM_ORG_USER_ASSOCIATION" ]]; then
         DELETE_PROCEDURE+="DELETE FROM $table WHERE UM_ORG_ID = '$ORG_UUID';"
@@ -104,6 +104,7 @@ while IFS=',' read -r TENANT_ID ORG_UUID; do
         DELETE_PROCEDURE+="DELETE FROM $table WHERE REG_TENANT_ID = $TENANT_ID;"
       fi
     done
+    DELETE_PROCEDURE+="COMMIT;"
 
     # Execute the delete procedure
     echo "Executing deletion procedure on shared database for TENANT_ID=$TENANT_ID..."
@@ -129,4 +130,4 @@ echo "Data deletion process completed. Summary available at $SUMMARY_FILE."
 
 # Unset PGPASSWORD to avoid leaving it in the environment
 unset PGPASSWORD
-
+

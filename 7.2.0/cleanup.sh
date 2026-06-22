@@ -106,7 +106,49 @@ run_privileged() {
 # For validation
 validate_db_configs() {
   local db_type="$1"
-  # If needed, add specific validations. Currently, it's minimal.
+  local mode="$2"
+  local expected_length
+  local index
+  local -a array_names array_lengths
+
+  if [[ "$db_type" != "h2" && "$db_type" != "mssql" && "$db_type" != "mysql" && "$db_type" != "postgresql" ]]; then
+    echo "Error: unsupported $mode database type '$db_type'."
+    return 1
+  fi
+
+  if [[ "$mode" == "shared" ]]; then
+    if [[ "$db_type" == "h2" ]]; then
+      array_names=("SHARED_DB_URLS" "SHARED_DB_USERS" "SHARED_DB_PASSWORDS" "SHARED_DB_LOG_DIRS")
+      array_lengths=("${#SHARED_DB_URLS[@]}" "${#SHARED_DB_USERS[@]}" "${#SHARED_DB_PASSWORDS[@]}" "${#SHARED_DB_LOG_DIRS[@]}")
+    else
+      array_names=("SHARED_DB_HOSTS" "SHARED_DB_PORTS" "SHARED_DB_NAMES" "SHARED_DB_USERS" "SHARED_DB_PASSWORDS" "SHARED_DB_LOG_DIRS")
+      array_lengths=("${#SHARED_DB_HOSTS[@]}" "${#SHARED_DB_PORTS[@]}" "${#SHARED_DB_NAMES[@]}" "${#SHARED_DB_USERS[@]}" "${#SHARED_DB_PASSWORDS[@]}" "${#SHARED_DB_LOG_DIRS[@]}")
+    fi
+  elif [[ "$mode" == "identity" ]]; then
+    if [[ "$db_type" == "h2" ]]; then
+      array_names=("IDENTITY_DB_URLS" "IDENTITY_DB_USERS" "IDENTITY_DB_PASSWORDS" "IDENTITY_DB_LOG_DIRS")
+      array_lengths=("${#IDENTITY_DB_URLS[@]}" "${#IDENTITY_DB_USERS[@]}" "${#IDENTITY_DB_PASSWORDS[@]}" "${#IDENTITY_DB_LOG_DIRS[@]}")
+    else
+      array_names=("IDENTITY_DB_HOSTS" "IDENTITY_DB_PORTS" "IDENTITY_DB_NAMES" "IDENTITY_DB_USERS" "IDENTITY_DB_PASSWORDS" "IDENTITY_DB_LOG_DIRS")
+      array_lengths=("${#IDENTITY_DB_HOSTS[@]}" "${#IDENTITY_DB_PORTS[@]}" "${#IDENTITY_DB_NAMES[@]}" "${#IDENTITY_DB_USERS[@]}" "${#IDENTITY_DB_PASSWORDS[@]}" "${#IDENTITY_DB_LOG_DIRS[@]}")
+    fi
+  else
+    echo "Error: unknown database configuration mode '$mode'."
+    return 1
+  fi
+
+  expected_length="${array_lengths[0]}"
+  if [[ "$expected_length" -eq 0 ]]; then
+    echo "Error: $mode database configuration cannot be empty."
+    return 1
+  fi
+
+  for ((index = 1; index < ${#array_lengths[@]}; index++)); do
+    if [[ "${array_lengths[$index]}" -ne "$expected_length" ]]; then
+      echo "Error: $mode database configuration length mismatch: ${array_names[0]} has $expected_length entries, but ${array_names[$index]} has ${array_lengths[$index]}."
+      return 1
+    fi
+  done
 }
 
 # Extract parameters based on DB type
@@ -124,12 +166,12 @@ get_db_params() {
 
     if [[ "$db_type" == "h2" ]]; then
       local url="${SHARED_DB_URLS[$index]}"
-      echo "$url" "$user" "$password" "$log_dir"
+      printf '%s\n' "$url" "$user" "$password" "$log_dir"
     else
       local host="${SHARED_DB_HOSTS[$index]}"
       local port="${SHARED_DB_PORTS[$index]}"
       local db_name="${SHARED_DB_NAMES[$index]}"
-      echo "$host" "$port" "$db_name" "$user" "$password" "$log_dir"
+      printf '%s\n' "$host" "$port" "$db_name" "$user" "$password" "$log_dir"
     fi
   else
     # identity DB
@@ -139,12 +181,12 @@ get_db_params() {
 
     if [[ "$db_type" == "h2" ]]; then
       local url="${IDENTITY_DB_URLS[$index]}"
-      echo "$url" "$user" "$password" "$log_dir"
+      printf '%s\n' "$url" "$user" "$password" "$log_dir"
     else
       local host="${IDENTITY_DB_HOSTS[$index]}"
       local port="${IDENTITY_DB_PORTS[$index]}"
       local db_name="${IDENTITY_DB_NAMES[$index]}"
-      echo "$host" "$port" "$db_name" "$user" "$password" "$log_dir"
+      printf '%s\n' "$host" "$port" "$db_name" "$user" "$password" "$log_dir"
     fi
   fi
 }
@@ -208,20 +250,40 @@ run_um_tenant_cleanup() {
   fi
 }
 
+validate_cleanup_success_file() {
+  local log_dir="$1"
+  local database_label="$2"
+  local index="$3"
+  local success_file="$log_dir/successful_deletions.csv"
+  local expected_tenants successful_tenants
+
+  if [[ ! -f "$success_file" ]]; then
+    echo "Error: $database_label index $index did not produce $success_file."
+    return 1
+  fi
+
+  expected_tenants=$(awk -F',' 'NF >= 2 && $1 != "TENANT_ID" { print $1 }' "$EXPORT_FILE" | sort -u)
+  successful_tenants=$(tail -n +2 "$success_file" | sort -u)
+  if [[ "$expected_tenants" != "$successful_tenants" ]]; then
+    echo "Error: $database_label index $index did not successfully clean every exported tenant."
+    return 1
+  fi
+}
+
 # ========================================================
 # Main Execution
 # ========================================================
 
 # Validate configurations
-validate_db_configs "$SHARED_DB_TYPE" SHARED_DB_URLS[@]
-validate_db_configs "$IDENTITY_DB_TYPE" IDENTITY_DB_URLS[@]
+validate_db_configs "$SHARED_DB_TYPE" "shared" || exit 1
+validate_db_configs "$IDENTITY_DB_TYPE" "identity" || exit 1
 
 PRIMARY_SHARED_INDEX=0
 PRIMARY_IDENTITY_INDEX=0
 
 # Extract primary shared DB parameters
-PRIMARY_SHARED_PARAMS=($(get_db_params "$SHARED_DB_TYPE" "$PRIMARY_SHARED_INDEX" "shared"))
-PRIMARY_IDENTITY_PARAMS=($(get_db_params "$IDENTITY_DB_TYPE" "$PRIMARY_IDENTITY_INDEX" "identity"))
+IFS=$'\n' read -r -d '' -a PRIMARY_SHARED_PARAMS < <(get_db_params "$SHARED_DB_TYPE" "$PRIMARY_SHARED_INDEX" "shared"; printf '\0')
+IFS=$'\n' read -r -d '' -a PRIMARY_IDENTITY_PARAMS < <(get_db_params "$IDENTITY_DB_TYPE" "$PRIMARY_IDENTITY_INDEX" "identity"; printf '\0')
 
 # Assign variables for clarity
 if [[ "$SHARED_DB_TYPE" == "h2" ]]; then
@@ -297,7 +359,7 @@ while true; do
   fi
 
   for (( i=0; i<${#SHARED_DB_USERS[@]}; i++ )); do
-    SHARED_PARAMS=($(get_db_params "$SHARED_DB_TYPE" "$i" "shared"))
+    IFS=$'\n' read -r -d '' -a SHARED_PARAMS < <(get_db_params "$SHARED_DB_TYPE" "$i" "shared"; printf '\0')
 
     if [[ "$SHARED_DB_TYPE" == "h2" ]]; then
       run_shared_cleanup "$SHARED_DB_TYPE" "$SHARED_CLEANUP_SCRIPT" \
@@ -313,6 +375,8 @@ while true; do
       echo "Failed to clean shared DB resources for shared DB index $i. Exiting."
       exit 1
     fi
+
+    validate_cleanup_success_file "${SHARED_DB_LOG_DIRS[$i]}" "shared DB" "$i" || exit 1
   done
 
   # --------------------------------------------------------
@@ -326,7 +390,7 @@ while true; do
 
   for (( j=0; j<${#IDENTITY_DB_USERS[@]}; j++ )); do
   echo "Processing identity DB index $j..."
-    IDENTITY_PARAMS=($(get_db_params "$IDENTITY_DB_TYPE" "$j" "identity"))
+    IFS=$'\n' read -r -d '' -a IDENTITY_PARAMS < <(get_db_params "$IDENTITY_DB_TYPE" "$j" "identity"; printf '\0')
 
     if [[ "$IDENTITY_DB_TYPE" == "h2" ]]; then
       run_identity_cleanup "$IDENTITY_DB_TYPE" "$IDENTITY_CLEANUP_SCRIPT" \
@@ -342,6 +406,8 @@ while true; do
       echo "Failed to clean identity DB resources for identity DB index $j. Exiting."
       exit 1
     fi
+
+    validate_cleanup_success_file "${IDENTITY_DB_LOG_DIRS[$j]}" "identity DB" "$j" || exit 1
   done
 
   # --------------------------------------------------------

@@ -99,7 +99,7 @@ while IFS=',' read -r TENANT_ID ORG_UUID; do
     echo "Processing TENANT_ID=$TENANT_ID, ORG_UUID=$ORG_UUID"
 
     # Generate the delete procedure dynamically
-    DELETE_PROCEDURE=""
+    DELETE_PROCEDURE="BEGIN;"
     for table in "${DELETE_ORDER[@]}"; do
       if [[ "$table" == "IDN_ORG_USER_INVITATION" ]]; then
         DELETE_PROCEDURE+="DELETE FROM $table WHERE INVITED_ORG_ID = '$ORG_UUID';"
@@ -107,6 +107,7 @@ while IFS=',' read -r TENANT_ID ORG_UUID; do
         DELETE_PROCEDURE+="DELETE FROM $table WHERE TENANT_ID = $TENANT_ID;"
       fi
     done
+    DELETE_PROCEDURE+="COMMIT;"
 
     # Execute the delete procedure
     echo "Executing deletion procedure on identity database for TENANT_ID=$TENANT_ID..."
@@ -130,4 +131,4 @@ echo "Data deletion process completed. Summary available at $SUMMARY_FILE."
 
 # Unset PGPASSWORD to avoid leaving it in the environment
 unset PGPASSWORD
-
+

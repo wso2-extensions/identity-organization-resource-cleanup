@@ -30,15 +30,16 @@ LIMIT $BATCH_SIZE;
 echo "Fetching tenant IDs and organization UUIDs from PostgreSQL database..."
 
 # Temporary file to store raw output
-RAW_OUTPUT="/tmp/raw_output.log"
+RAW_OUTPUT="/tmp/raw_output.$$.log"
+ERROR_LOG="/tmp/error.$$.log"
 
 # Execute the query and capture output in a raw format
-psql -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" -U "$DB_USER" -c "$FETCH_QUERY" --tuples-only --no-align --field-separator=$'\t' 2>error.log > "$RAW_OUTPUT"
+psql -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" -U "$DB_USER" -c "$FETCH_QUERY" --tuples-only --no-align --field-separator=$'\t' 2>"$ERROR_LOG" > "$RAW_OUTPUT"
 
 # Check for errors
 if [[ $? -ne 0 ]]; then
   echo "Failed to fetch data. PostgreSQL error log:"
-  cat error.log
+  cat "$ERROR_LOG"
   exit 1
 fi
 
@@ -62,7 +63,7 @@ while IFS=$'\t' read -r TENANT_ID ORG_UUID; do
 done < "$RAW_OUTPUT"
 
 # Clean up temporary raw output file
-rm -f "$RAW_OUTPUT"
+rm -f "$RAW_OUTPUT" "$ERROR_LOG"
 
 # Check if the export file contains more than just the header
 if [[ $(wc -l < "$EXPORT_FILE") -eq 0 ]]; then
@@ -74,4 +75,3 @@ fi
 
 # Unset PGPASSWORD to avoid leaving it in the environment.
 unset PGPASSWORD
-

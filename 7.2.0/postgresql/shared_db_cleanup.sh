@@ -77,7 +77,7 @@ fi
 # Step 3: Filter TABLE_LIST to include only existing tables
 DELETE_ORDER=()
 for table in "${TABLE_LIST[@]}"; do
-  if echo "$AVAILABLE_TABLES" | grep -qw "$table"; then
+  if echo "$AVAILABLE_TABLES" | grep -qiw "$table"; then
     DELETE_ORDER+=("$table")
   fi
 done
@@ -129,4 +129,4 @@ echo "Data deletion process completed. Summary available at $SUMMARY_FILE."
 
 # Unset PGPASSWORD to avoid leaving it in the environment
 unset PGPASSWORD
-
+
