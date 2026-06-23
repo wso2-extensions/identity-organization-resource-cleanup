@@ -1,7 +1,6 @@
 # B2B Deleted Organizations Resource Cleanup Script - Documentation
 
-This document provides detailed instructions on setting up and executing the database cleanup script. The script is designed to handle shared and identity databases in H2, MSSQL, or MySQL. It supports configurations for multiple databases as arrays, allowing flexible setups such as clustering.
-
+This document provides detailed instructions on setting up and executing the database cleanup script. The script is designed to handle shared and identity databases in H2, MSSQL, MySQL, or PostgreSQL. It supports configurations for multiple databases as arrays, allowing flexible setups such as clustering.
 
 ## Prerequisites
 
@@ -9,6 +8,7 @@ This document provides detailed instructions on setting up and executing the dat
    - H2
    - MSSQL
    - MySQL
+   - PostgreSQL
 
 2. **Required Tools**:
    - Bash shell
@@ -24,9 +24,9 @@ The script allows for specifying shared and identity databases through separate 
 
 ### Configuration Section
 ```bash
-# Supported DB types: h2, mssql, mysql
-SHARED_DB_TYPE="mysql"     # can be h2, mssql, or mysql
-IDENTITY_DB_TYPE="mysql"   # can be h2, mssql, or mysql
+# Supported DB types: h2, mssql, mysql, postgresql
+SHARED_DB_TYPE="mysql"     # can be h2, mssql, mysql, or postgresql
+IDENTITY_DB_TYPE="mysql"   # can be h2, mssql, mysql, or postgresql
 
 # Shared database configurations
 <Refer below sections on how to fill this information based on the DB type>
@@ -173,7 +173,7 @@ brew services start mysql
      SHARED_DB_PASSWORDS=("password1" "password2")
      SHARED_DB_LOG_DIRS=("/var/log/shared1" "/var/log/shared2") # If there are 2 DBs, then 2 paths are needed for logging
 
-     IDENTITY_DB_HOSTS=("jdbc:h2:...." "jdbc:h2:...")
+     IDENTITY_DB_URLS=("jdbc:h2:...." "jdbc:h2:...")
      IDENTITY_DB_USERS=("user1" "user2")
      IDENTITY_DB_PASSWORDS=("password1" "password2")
      IDENTITY_DB_LOG_DIRS=("/var/log/identity1" "/var/log/identity2")
@@ -257,5 +257,5 @@ EXPORT_FILE="/tmp/exported_data.csv"
 
 Execute the script:
 ```bash
-bash cleanup_script.sh
+bash cleanup.sh
 ```

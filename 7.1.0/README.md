@@ -2,7 +2,6 @@
 
 This document provides detailed instructions on setting up and executing the database cleanup script. The script is designed to handle shared and identity databases in H2, MSSQL, or MySQL. It supports configurations for multiple databases as arrays, allowing flexible setups such as clustering.
 
-
 ## Prerequisites
 
 1. **Supported Database Types**:
