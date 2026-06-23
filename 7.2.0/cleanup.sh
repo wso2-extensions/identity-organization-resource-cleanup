@@ -4,32 +4,32 @@
 # Configuration Section
 # ========================================================
 
-# Supported DB types: h2, mssql, mysql
-SHARED_DB_TYPE="postgresql"     # can be h2, mssql, postgresql or mysql
-IDENTITY_DB_TYPE="postgresql"   # can be h2, mssql, postgresql or mysql
+# Supported DB types: h2, mssql, mysql, postgresql
+SHARED_DB_TYPE="mysql"     # can be h2, mssql, postgresql or mysql
+IDENTITY_DB_TYPE="mysql"   # can be h2, mssql, postgresql or mysql
 
 
 # Shared database configurations
 SHARED_DB_HOSTS=("127.0.0.1")
-SHARED_DB_PORTS=("5432")  # MSSQL default port is 1433; MySQL default is 3306
-SHARED_DB_USERS=("wso2carbon")
-SHARED_DB_PASSWORDS=("wso2carbon")
-SHARED_DB_NAMES=("wso2is72")
-SHARED_DB_LOG_DIRS=("/tmp/wso2is72-cleanup/shared-db-results")
+SHARED_DB_PORTS=("3307")  # MSSQL default port is 1433; MySQL default is 3306
+SHARED_DB_USERS=("root")
+SHARED_DB_PASSWORDS=("yourpassword")
+SHARED_DB_NAMES=("wso2shared_db")
+SHARED_DB_LOG_DIRS=("path/to/shared_db_result_01")
 
 # Identity database configurations
 IDENTITY_DB_HOSTS=("127.0.0.1")
-IDENTITY_DB_PORTS=("5432")
-IDENTITY_DB_USERS=("wso2carbon")
-IDENTITY_DB_PASSWORDS=("wso2carbon")
-IDENTITY_DB_NAMES=("wso2is72")
-IDENTITY_DB_LOG_DIRS=("/tmp/wso2is72-cleanup/identity-db-results")
+IDENTITY_DB_PORTS=("3307")
+IDENTITY_DB_USERS=("root")
+IDENTITY_DB_PASSWORDS=("yourpassword")
+IDENTITY_DB_NAMES=("wso2identity_db")
+IDENTITY_DB_LOG_DIRS=("path/to/identity_db_result_01")
 
 # Common credentials (assuming the same user/password for simplicity)
 
 BATCH_SIZE=5
 BATCH_WAIT_TIME=5000 # in milliseconds
-EXPORT_FILE="/tmp/wso2is72-exported-data.csv"
+EXPORT_FILE="path/to/exported/exported_data.csv" 
 
 # H2_JAR_PATH="H2/jar/path" # For MSSQL and MySQL, we do not need external JARs
 
